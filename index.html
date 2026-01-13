@@ -1,39 +1,278 @@
-<!-- 🔥 新竹帥哥團・友情大考驗 v2（20 題加量版） -->
 <!doctype html>
 <html lang="zh-Hant">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>友情大考驗｜新竹帥哥團特仕版 v2</title>
-<style>
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC",sans-serif;background:#0b1020;color:#e9ecff}
-.wrap{max-width:900px;margin:auto;padding:20px}
-header{background:#111a33;padding:16px;border-radius:14px;margin-bottom:16px}
-h1{margin:0;font-size:22px}
-.sub{opacity:.7;font-size:13px}
-.card{background:#111a33;border-radius:14px;padding:16px;margin-bottom:16px}
-.choice{border:1px solid #334;padding:12px;border-radius:10px;margin:8px 0;cursor:pointer}
-.choice:hover{background:#1a2550}
-.choice.ok{border-color:#3ddc97;background:#133}
-.choice.bad{border-color:#ff5c7a;background:#311}
-button{padding:10px 14px;border-radius:10px;border:none;cursor:pointer}
-.primary{background:#7aa2ff;color:#000}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>友情大考驗｜新竹帥哥團 v2</title>
+  <style>
+    :root{--bg:#0b1020;--card:#111a33;--text:#e9ecff;--muted:#9fb0ff;--ok:#3ddc97;--bad:#ff5c7a;--bd:rgba(255,255,255,.14);}
+    body{margin:0;font-family:system-ui,-apple-system,"Noto Sans TC",Segoe UI,Arial;background:var(--bg);color:var(--text)}
+    .wrap{max-width:900px;margin:0 auto;padding:18px}
+    header{border:1px solid var(--bd);background:rgba(17,26,51,.75);backdrop-filter:blur(10px);padding:14px 16px;border-radius:16px}
+    h1{margin:0;font-size:20px}
+    .sub{margin-top:6px;color:var(--muted);font-size:13px;line-height:1.5}
+    .pill{display:inline-block;border:1px solid var(--bd);border-radius:999px;padding:7px 10px;color:var(--muted);font-size:12px;background:rgba(0,0,0,.18)}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-top:10px}
+    .card{margin-top:14px;border:1px solid var(--bd);background:rgba(17,26,51,.7);backdrop-filter:blur(10px);border-radius:16px;overflow:hidden}
+    .hd{padding:14px 16px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+    .tag{color:var(--muted);font-size:12px}
+    .q{margin-top:6px;font-size:18px;line-height:1.35}
+    .bd{padding:14px 16px}
+    .choices{display:grid;gap:10px;margin-top:10px}
+    .choice{border:1px solid var(--bd);border-radius:14px;padding:12px 12px;cursor:pointer;background:rgba(0,0,0,.14);transition:.12s}
+    .choice:hover{border-color:rgba(122,162,255,.7)}
+    .choice.ok{border-color:rgba(61,220,151,.8);background:rgba(61,220,151,.08)}
+    .choice.bad{border-color:rgba(255,92,122,.85);background:rgba(255,92,122,.08)}
+    .choice.disabled{cursor:not-allowed;opacity:.95}
+    .hint{margin-top:12px;color:var(--muted);font-size:13px;line-height:1.55}
+    .actions{padding:14px 16px;border-top:1px solid var(--bd);display:flex;gap:10px;flex-wrap:wrap}
+    button{border:1px solid var(--bd);background:rgba(0,0,0,.2);color:var(--text);padding:10px 12px;border-radius:12px;font-weight:650;cursor:pointer}
+    button:hover{border-color:rgba(122,162,255,.7)}
+    button.primary{background:rgba(122,162,255,.18);border-color:rgba(122,162,255,.6)}
+    button.danger{background:rgba(255,92,122,.14);border-color:rgba(255,92,122,.55)}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    .result{display:none;padding:16px}
+    .result.show{display:block}
+    .score{font-size:28px;font-weight:900;margin:0 0 10px}
+    .level{display:inline-block;border:1px solid var(--bd);border-radius:999px;padding:8px 10px;color:var(--muted);background:rgba(255,255,255,.04)}
+    .punish{margin-top:12px;padding:12px;border-radius:14px;border:1px dashed rgba(122,162,255,.6);background:rgba(122,162,255,.1);line-height:1.55}
+    .small{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.6}
+  </style>
 </head>
 
 <body>
-<div class="wrap">
-<header>
-  <h1>🤝 友情大考驗｜新竹帥哥團 v2</h1>
-  <div class="sub">20 題加量版｜答完就知道誰該請可不可熟成紅茶</div>
-</header>
+  <div class="wrap">
+    <header>
+      <h1>🤝 友情大考驗｜新竹帥哥團 v2（20 題加量）</h1>
+      <div class="sub">答完就知道誰該請「可不可熟成紅茶」（飲料店）</div>
+      <div class="row">
+        <span class="pill" id="progress">第 1 / 20 題</span>
+        <span class="pill">目前分數：<b id="scoreNow">0</b></span>
+      </div>
+    </header>
 
-<div id="app"></div>
+    <section class="card" id="quizCard">
+      <div class="hd">
+        <div>
+          <div class="tag" id="qGroup">第一關</div>
+          <div class="q" id="qText">題目</div>
+        </div>
+        <span class="pill" id="qType">單選</span>
+      </div>
+      <div class="bd">
+        <div class="choices" id="choices"></div>
+        <div class="hint" id="hint">選一個答案（選完會顯示對錯與解釋）。</div>
+      </div>
+      <div class="actions">
+        <button id="prevBtn">⬅️ 上一題</button>
+        <button class="primary" id="nextBtn" disabled>下一題 ➡️</button>
+        <button class="danger" id="restartBtn">重來</button>
+      </div>
+    </section>
+
+    <section class="card result" id="resultCard">
+      <div class="hd">
+        <div>
+          <div class="tag">結果</div>
+          <div class="q">你們到底熟不熟</div>
+        </div>
+      </div>
+      <div class="result" id="resultInner">
+        <p class="score" id="finalScore">0 / 20</p>
+        <div class="level" id="finalLevel">友情等級</div>
+        <div class="punish" id="punishBox">懲罰</div>
+        <div class="small" id="review"></div>
+      </div>
+      <div class="actions">
+        <button class="primary" id="againBtn">再玩一次</button>
+      </div>
+    </section>
+  </div>
 
 <script>
-const Q = [
-/* 第一關｜記憶力 */
-{q:"這個群組最一開始是誰提議要開的？",c:["阿豪","黃奕文","李晉逵","林子暘"],a:1},
-{q:"第一天群組訊息密度最高的回覆是？",c:["好啊","笑死","ㄚˊ","真的假的"],a:2},
-{q:"誰最常被叫去『順路載人』？",c:["阿豪","黃奕文","李晉逵","大家"],a:3},
-{q:"第一次討論集合時間時，最混亂的是？",c:["幾點","在哪","怎麼去","全部"],a:3},
+  const QUESTIONS = [
+    { group:"第一關｜記憶力", text:"這個群組最一開始是誰提到「有人說要開群組」？", choices:["阿豪","黃奕文","李晉逵","林子暘"], correct:1, explain:"一開始是黃奕文提到有人說要開群組。" },
+    { group:"第一關｜記憶力", text:"群組最常見、最像呼吸聲的回覆是？", choices:["好啊","ㄚˊ","笑死","收到"], correct:1, explain:"ㄚˊ 出現頻率超高。" },
+    { group:"第一關｜記憶力", text:"誰最早被叫「出來迎接老子」？", choices:["李晉逵","林子暘","阿豪","曾建勛"], correct:2, explain:"一開始就 @阿豪 出來迎接。" },
+    { group:"第一關｜記憶力", text:"你們討論集合時間時最常發生什麼？", choices:["秒決定","一直改","完全沒共識","以上皆是"], correct:3, explain:"時間/地點/交通都會一起混亂。" },
+    { group:"第一關｜記憶力", text:"『沒錢』這句在群組的功能比較像？", choices:["真實財務狀態","口頭禪","保命符","誘惑前的鋪墊"], correct:3, explain:"通常下一句就會衝車/衝票/衝吃的。" },
+
+    { group:"第二關｜行為理解", text:"『順路載我』最接近的真實含義是？", choices:["真的順","小繞一下","繞爆","心理順、地理不順"], correct:3, explain:"順不順看嘴巴，不看地圖。" },
+    { group:"第二關｜行為理解", text:"『好啊好啊』在群組內通常代表？", choices:["完全聽懂","只聽到一半","先答應再說","其實在拒絕"], correct:2, explain:"先答應是基本禮貌，聽懂是加分項。" },
+    { group:"第二關｜行為理解", text:"約早上集合，最可能出現的狀況是？", choices:["全員準時","全員遲到","有人睡過頭","只有一個人到"], correct:2, explain:"morning call 是你們文明的基石。" },
+    { group:"第二關｜行為理解", text:"『我都可以』最常出現在哪種情境？", choices:["吃什麼","幾點集合","去哪裡","以上皆是"], correct:3, explain:"我都可以 = 你們都要幫我決定。" },
+    { group:"第二關｜行為理解", text:"群組最有效的危機處理方法是？", choices:["講道理","道歉","貼圖","裝死"], correct:2, explain:"貼圖 = 一切都會好起來。" },
+
+    { group:"第三關｜群組文化", text:"『請可不可』裡的「可不可」是什麼？", choices:["可以不可以","隨便一間飲料店","飲料店：可不可熟成紅茶","暗號"], correct:2, explain:"可不可 = 飲料店『可不可熟成紅茶』。" },
+    { group:"第三關｜群組文化", text:"誰最常一被tag就說『很躁』？", choices:["阿豪","黃奕文","李晉逵","林子暘"], correct:0, explain:"被tag太多容易躁（懂的都懂）。" },
+    { group:"第三關｜群組文化", text:"看到車、票、改裝之類話題，群組最容易進入哪種模式？", choices:["冷靜分析","衝動購買","互嗆+貼圖","先說沒錢"], correct:3, explain:"先說沒錢是流程的一部分。" },
+    { group:"第三關｜群組文化", text:"群組裡最常被當作『情緒語氣』使用的是？", choices:["季","寄","ㄚˊ","全部都有"], correct:3, explain:"你們的語氣字典很完整。" },
+    { group:"第三關｜群組文化", text:"『請客/請飲料』最常出現的實際效果是？", choices:["真的請了","變成梗","延後到下次","當場忘記"], correct:1, explain:"你們最強的是把事情變梗。" },
+
+    { group:"第四關｜靈魂拷問", text:"半夜 2 點你說『我在路邊』，最可能回你的是？", choices:["秒來","已讀不回","先問你在哪","丟貼圖"], correct:2, explain:"先問在哪比較符合真實世界。" },
+    { group:"第四關｜靈魂拷問", text:"誰最可能最後留下來收拾殘局？", choices:["阿豪","黃奕文","李晉逵","林子暘"], correct:0, explain:"常常就是那個最碎念的人，最後默默收。" },
+    { group:"第四關｜靈魂拷問", text:"『再看看』在群組內通常代表？", choices:["真的要看","其實已決定","想拖時間","不想回答"], correct:1, explain:"再看看=我已經決定了但想裝一下。" },
+    { group:"第四關｜靈魂拷問", text:"如果要指定一個人請大家喝可不可熟成紅茶，最合理理由是？", choices:["他最有錢","他最愛講","他輸最多","因為好玩"], correct:3, explain:"你們的世界觀：好玩最大。" },
+    { group:"第四關｜靈魂拷問", text:"這群到底算什麼？", choices:["朋友","酒肉朋友","革命夥伴","家人"], correct:3, explain:"嘴很臭但會約出來，基本上就是家人。" },
+  ];
+
+  const PUNISHMENTS = [
+    "輸的人請「可不可熟成紅茶」每人一杯（含加料）",
+    "輸的人當天負責訂位/喬時間（改一次就加請一杯）",
+    "輸的人群組暱稱改成『我錯了我很爛』24 小時",
+    "輸的人被指定 morning call（不能已讀不回）",
+    "輸的人錄 15 秒誠懇道歉語音（不能笑）",
+    "輸的人下一次出門負責帶撲克牌/麻將/音響（忘了加罰）"
+  ];
+
+  let idx = 0;
+  let score = 0;
+  const picked = Array(QUESTIONS.length).fill(null);
+
+  const quizCard = document.getElementById("quizCard");
+  const resultCard = document.getElementById("resultCard");
+  const qGroup = document.getElementById("qGroup");
+  const qText = document.getElementById("qText");
+  const choicesEl = document.getElementById("choices");
+  const hintEl = document.getElementById("hint");
+  const progressEl = document.getElementById("progress");
+  const scoreNowEl = document.getElementById("scoreNow");
+  const prevBtn = document.getElementById("prevBtn");
+  const nextBtn = document.getElementById("nextBtn");
+  const restartBtn = document.getElementById("restartBtn");
+  const againBtn = document.getElementById("againBtn");
+  const finalScoreEl = document.getElementById("finalScore");
+  const finalLevelEl = document.getElementById("finalLevel");
+  const punishBoxEl = document.getElementById("punishBox");
+  const reviewEl = document.getElementById("review");
+
+  function updateTop(){
+    progressEl.textContent = `第 ${idx+1} / ${QUESTIONS.length} 題`;
+    scoreNowEl.textContent = score;
+  }
+
+  function render(){
+    updateTop();
+    const q = QUESTIONS[idx];
+    qGroup.textContent = q.group;
+    qText.textContent = q.text;
+
+    choicesEl.innerHTML = "";
+    hintEl.textContent = "選一個答案（選完會顯示對錯與解釋）。";
+    nextBtn.disabled = picked[idx] === null;
+
+    q.choices.forEach((text, i) => {
+      const div = document.createElement("div");
+      div.className = "choice";
+      div.textContent = text;
+
+      div.addEventListener("click", () => pick(i));
+      choicesEl.appendChild(div);
+    });
+
+    // 如果已作答，顯示對錯
+    if(picked[idx] !== null) showGrading();
+
+    prevBtn.disabled = idx === 0;
+    nextBtn.textContent = (idx === QUESTIONS.length - 1) ? "看結果 ✅" : "下一題 ➡️";
+  }
+
+  function pick(i){
+    if(picked[idx] !== null) return; // 不允許改答案（要允許我也能幫你改）
+    picked[idx] = i;
+
+    if(i === QUESTIONS[idx].correct) score += 1;
+
+    showGrading();
+    nextBtn.disabled = false;
+    updateTop();
+  }
+
+  function showGrading(){
+    const q = QUESTIONS[idx];
+    const selected = picked[idx];
+
+    [...choicesEl.children].forEach((node, i) => {
+      node.classList.add("disabled");
+      if(i === q.correct) node.classList.add("ok");
+      if(i === selected && selected !== q.correct) node.classList.add("bad");
+    });
+
+    if(selected === q.correct){
+      hintEl.innerHTML = `✅ 答對了！<br>${escapeHtml(q.explain)}`;
+    }else{
+      hintEl.innerHTML = `❌ 答錯了！正解是 <b>${escapeHtml(q.choices[q.correct])}</b><br>${escapeHtml(q.explain)}`;
+    }
+  }
+
+  function next(){
+    if(idx === QUESTIONS.length - 1){
+      showResult();
+      return;
+    }
+    idx += 1;
+    render();
+  }
+
+  function prev(){
+    if(idx === 0) return;
+    idx -= 1;
+    render();
+  }
+
+  function restart(){
+    idx = 0;
+    score = 0;
+    for(let i=0;i<picked.length;i++) picked[i] = null;
+
+    resultCard.classList.remove("show");
+    quizCard.style.display = "block";
+    render();
+  }
+
+  function levelOf(s, total){
+    const r = s / total;
+    if(r <= 0.34) return "🚶 路邊認識的";
+    if(r <= 0.67) return "🙂 普通朋友";
+    if(r <= 0.89) return "🔥 真的有在熟";
+    return "🏠 幹你這是家人吧";
+  }
+
+  function showResult(){
+    quizCard.style.display = "none";
+    resultCard.classList.add("show");
+
+    finalScoreEl.textContent = `${score} / ${QUESTIONS.length}`;
+    finalLevelEl.textContent = levelOf(score, QUESTIONS.length);
+
+    const punish = PUNISHMENTS[Math.floor(Math.random() * PUNISHMENTS.length)];
+    punishBoxEl.innerHTML = `🎲 隨機懲罰：<b>${escapeHtml(punish)}</b>`;
+
+    const wrongs = [];
+    for(let i=0;i<QUESTIONS.length;i++){
+      if(picked[i] !== QUESTIONS[i].correct){
+        wrongs.push(`第${i+1}題：你選「${QUESTIONS[i].choices[picked[i]]}」→ 正解「${QUESTIONS[i].choices[QUESTIONS[i].correct]}」`);
+      }
+    }
+    reviewEl.innerHTML = wrongs.length ? `你錯的題目：<br>• ${wrongs.map(escapeHtml).join("<br>• ")}` : "全對？你們真的太熟了（或你偷看）。";
+  }
+
+  function escapeHtml(str){
+    return String(str)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  prevBtn.addEventListener("click", prev);
+  nextBtn.addEventListener("click", next);
+  restartBtn.addEventListener("click", restart);
+  againBtn.addEventListener("click", restart);
+
+  render();
+</script>
+</body>
+</html>
+
