@@ -47,7 +47,11 @@
     .level{display:inline-block;border:1px solid var(--bd);border-radius:999px;padding:8px 10px;color:var(--muted);background:rgba(255,255,255,.04)}
     .punish{margin-top:12px;padding:12px;border-radius:14px;border:1px dashed rgba(122,162,255,.6);background:rgba(122,162,255,.1);line-height:1.55}
     .small{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.6}
-    .tiny{font-size:12px;opacity:.9}
+    .err{
+      margin-top:14px;padding:12px;border-radius:14px;
+      border:1px solid rgba(255,92,122,.6);background:rgba(255,92,122,.10);
+      color:var(--text);display:none;white-space:pre-wrap
+    }
   </style>
 </head>
 
@@ -56,14 +60,15 @@
     <header>
       <h1>🤝 友情大考驗｜新竹帥哥團（30 題・超地獄版）</h1>
       <div class="sub">
-        30 題嘴砲＋陷阱題。<b>專屬題</b>可指定「群組公認答案」。<br>
-        玩法：每題只能選一次；想改答案就按「重來」。
+        每題只能選一次；<b>專屬題</b>可指定「群組公認答案」。<br>
+        如果有報錯，頁面會直接顯示錯誤（不用開 Console）。
       </div>
       <div class="row">
         <span class="pill" id="progress">第 1 / 30 題</span>
         <span class="pill">目前分數：<b id="scoreNow">0</b></span>
-        <span class="pill tiny" id="metaNote"></span>
+        <span class="pill" id="metaNote">可計分題：—</span>
       </div>
+      <div class="err" id="errBox"></div>
     </header>
 
     <section class="card" id="quizCard">
@@ -89,7 +94,7 @@
       <div class="hd">
         <div>
           <div class="tag">結果</div>
-          <div class="q">友情等級判定（沒過就準備請客）</div>
+          <div class="q">友情等級判定</div>
         </div>
       </div>
       <div class="result" id="resultInner">
@@ -97,9 +102,7 @@
         <div class="level" id="finalLevel">友情等級</div>
         <div class="punish" id="punishBox">懲罰</div>
         <div class="small" id="review"></div>
-        <div class="small tiny">
-          ※ 「專屬題」若你想指定正解：看下方程式碼 <b>GROUP_TRUTH</b>，改名字就好。
-        </div>
+        <div class="small">※ 專屬題要指定正解：去改 <b>GROUP_TRUTH</b>（不用改程式其他地方）。</div>
       </div>
       <div class="actions">
         <button class="primary" id="againBtn">再玩一次</button>
@@ -108,58 +111,243 @@
   </div>
 
 <script>
-  // ======== 你們的成員（可增減） ========
-  const PEOPLE = ["李晉逵", "黃奕文", "阿豪", "林子暘", "曾建勛"];
-
-  // ======== 專屬題「群組公認答案」設定（超重要） ========
-  // 你想指定哪個人是正解：填 PEOPLE 裡面的名字
-  // 不想計分就填 null（那題會變投票題，不影響分數）
-  const GROUP_TRUTH = {
-    rescue_2am: null,          // 半夜 2 點求救誰最可能接：投票題（不計分）
-    last_clean: null,          // 最後留下收拾：投票題
-    most_late: null,           // 最常遲到：投票題
-    most_impulse: null,        // 最衝動下單：投票題
-    most_mute: null,           // 最常已讀不回：投票題
-    king_of_yes: null          // 最常「好啊好啊」但沒聽懂：投票題
+document.addEventListener("DOMContentLoaded", () => {
+  const errBox = document.getElementById("errBox");
+  const showErr = (e) => {
+    errBox.style.display = "block";
+    errBox.textContent =
+      "⚠️ JS 發生錯誤（所以題目可能不會顯示）\n\n" +
+      (e && e.stack ? e.stack : String(e));
   };
 
-  // 工具：把設定的名字轉成選項 index；找不到或 null -> 不計分
-  function truthIndex(key, choices){
-    const name = GROUP_TRUTH[key];
-    if(!name) return null;
-    const k = choices.indexOf(name);
-    return k >= 0 ? k : null;
+  try {
+    // ======== 成員名單（可增減） ========
+    const PEOPLE = ["李晉逵", "黃奕文", "阿豪", "林子暘", "曾建勛"];
+
+    // ======== 專屬題「群組公認答案」設定（不想計分就填 null） ========
+    const GROUP_TRUTH = {
+      rescue_2am: null,
+      last_clean: null,
+      most_late: null,
+      most_impulse: null,
+      most_mute: null,
+      king_of_yes: null
+    };
+
+    const truthIndex = (key, choices) => {
+      const name = GROUP_TRUTH[key];
+      if(!name) return null;
+      const k = choices.indexOf(name);
+      return k >= 0 ? k : null;
+    };
+
+    // ======== 30 題（完全無「可不可」） ========
+    const QUESTIONS = [
+      // 1-10 記憶＆邏輯地獄
+      {g:"第一關｜記憶地獄", t:"單選", q:"『開群組/約起來』最常發生的真相是？", c:["提前規劃","有人喊一聲但沒人動","出事才想到要溝通","以上皆是"], a:3, e:"你們是被事件推著走的團。" },
+      {g:"第一關｜記憶地獄", t:"單選", q:"群組最像呼吸聲的回覆是？", c:["好","收到","ㄚˊ","笑死"], a:2, e:"ㄚˊ = 心電圖。" },
+      {g:"第一關｜記憶地獄", t:"單選", q:"『我都可以』最常代表？", c:["真沒差","想被安排","在敷衍","其實有偏好但不說"], a:1, e:"我都可以 = 你們決定。" },
+      {g:"第一關｜記憶地獄", t:"單選", q:"『順路載我』最接近真相？", c:["真的順","小繞","繞爆","心理順、地理不順"], a:3, e:"順不順看嘴巴。" },
+      {g:"第一關｜記憶地獄", t:"單選", q:"『再看看』最常代表？", c:["真的要看","其實已決定","拖時間","不想回答"], a:1, e:"再看看 = 已決定但想裝。" },
+      {g:"第一關｜記憶地獄", t:"單選", q:"『我快到了』你最該問？", c:["到哪","你出門了嗎","定位呢","以上都要"], a:3, e:"友情的信任基礎：定位。" },
+      {g:"第一關｜記憶地獄", t:"單選", q:"你們的決策機制最像？", c:["投票","團長拍板","誰最大聲聽誰的","誰先到聽誰的"], a:2, e:"音量民主。" },
+      {g:"第一關｜記憶地獄", t:"單選", q:"『晚點回』的真實機率最高是？", c:["馬上回","真的晚點回","可能不回","已讀不回"], a:2, e:"晚點回 = 不確定會不會回。" },
+      {g:"第一關｜記憶地獄", t:"單選", q:"集合時間最常卡在？", c:["幾點","在哪","誰開車","全部一起卡"], a:3, e:"多瓶頸系統。" },
+      {g:"第一關｜記憶地獄", t:"單選", q:"你們最常把『認真』變成？", c:["更認真","尷尬","梗","吵架"], a:2, e:"萬物皆可梗。" },
+
+      // 11-18 陷阱題
+      {g:"第二關｜陷阱題", t:"單選", q:"有人說『5 分鐘到』，最可能是？", c:["真的 5 分鐘","至少 15 分鐘","看他在哪","他其實還沒出門"], a:2, e:"唯一正解：看他在哪。" },
+      {g:"第二關｜陷阱題", t:"單選", q:"『隨便』跟『我都可以』哪個比較危險？", c:["隨便","我都可以","都危險","看心情"], a:2, e:"都會出事，只是出事形式不同。" },
+      {g:"第二關｜陷阱題", t:"單選", q:"最容易讓行程爆炸的因素？", c:["下雨","有人遲到","臨時改地點","以上都會"], a:3, e:"你們行程的脆弱性很平均。" },
+      {g:"第二關｜陷阱題", t:"單選", q:"群組最有效止吵方式？", c:["講道理","道歉","貼圖","裝死"], a:2, e:"貼圖 = 和解協議。" },
+      {g:"第二關｜陷阱題", t:"單選", q:"大家都說『可以』最可能發生？", c:["真的都可以","突然全都不行","有人消失","以上皆是"], a:3, e:"可以 = 風險提示。" },
+      {g:"第二關｜陷阱題", t:"單選", q:"如果你問『誰要來』，最常得到？", c:["明確名單","一堆廢話","已讀","以上皆是"], a:3, e:"你們的答案常常不是答案。" },
+      {g:"第二關｜陷阱題", t:"單選", q:"你們最常見的溝通模式是？", c:["A 說 A，B 回 B","有問有答","全員理解一致","先吵再說"], a:0, e:"各聊各的才是真實。" },
+      {g:"第二關｜陷阱題", t:"單選", q:"『不要鬧』最常出現於？", c:["真的有人在鬧","沒人在鬧先講","自己在鬧","以上皆是"], a:3, e:"不要鬧 = 社交潤滑油。" },
+
+      // 19-24 名字專屬題（投票/可指定正解）
+      {g:"第三關｜名字專屬題", t:"投票/可指定正解", q:"半夜 2 點你說『我在路邊』，最可能接你電話的是誰？", c:[...PEOPLE,"看情況"], a: truthIndex("rescue_2am",[...PEOPLE,"看情況"]), e:"不指定就投票不計分；要計分去 GROUP_TRUTH 填名字。" },
+      {g:"第三關｜名字專屬題", t:"投票/可指定正解", q:"最可能最後留下來收拾殘局的是誰？", c:[...PEOPLE,"看情況"], a: truthIndex("last_clean",[...PEOPLE,"看情況"]), e:"自己決定群組公認答案。" },
+      {g:"第三關｜名字專屬題", t:"投票/可指定正解", q:"最常遲到，但理由也最多的是誰？", c:[...PEOPLE,"大家都會"], a: truthIndex("most_late",[...PEOPLE,"大家都會"]), e:"要地獄就指定正解，不然投票保平安。" },
+      {g:"第三關｜名字專屬題", t:"投票/可指定正解", q:"最衝動下單 / 最容易被推坑成功的是誰？", c:[...PEOPLE,"看情況"], a: truthIndex("most_impulse",[...PEOPLE,"看情況"]), e:"超容易吵起來的一題。" },
+      {g:"第三關｜名字專屬題", t:"投票/可指定正解", q:"最常已讀不回，但出現時又很吵的是誰？", c:[...PEOPLE,"看情況"], a: truthIndex("most_mute",[...PEOPLE,"看情況"]), e:"你們自己裁決。" },
+      {g:"第三關｜名字專屬題", t:"投票/可指定正解", q:"最常『好啊好啊』但其實沒聽懂的是誰？", c:[...PEOPLE,"你自己"], a: truthIndex("king_of_yes",[...PEOPLE,"你自己"]), e:"想更狠就把正解指定給某個人。" },
+
+      // 25-30 終極地獄
+      {g:"第四關｜終極地獄", t:"單選", q:"今天突然改行程，最可能的收尾是？", c:["完美執行","各走各的","吵完繼續","當作沒發生"], a:2, e:"你們吵完還是會約，才是真的熟。" },
+      {g:"第四關｜終極地獄", t:"單選", q:"友情大考驗的核心目的其實是？", c:["增進感情","找出誰最雷","決定誰請客","以上皆是"], a:3, e:"你已經抓到遊戲靈魂。" },
+      {g:"第四關｜終極地獄", t:"單選", q:"如果有人說『我在樓下』，你最該做的是？", c:["立刻下去","先開窗確認","要定位/拍照證明","回 ㄚˊ"], a:2, e:"沒有證據，一律當沒到。" },
+      {g:"第四關｜終極地獄", t:"單選", q:"你們的『下次再約』最像什麼？", c:["承諾","祝福","迷信","一種口頭禪"], a:3, e:"下次 = 玄學。" },
+      {g:"第四關｜終極地獄", t:"單選", q:"群組最強的能力是？", c:["準時","規劃","把尷尬變梗","有效溝通"], a:2, e:"能把任何事變梗，算是一種天賦。" },
+      {g:"第四關｜終極地獄", t:"單選", q:"這群到底算什麼？", c:["朋友","酒肉朋友","革命夥伴","家人"], a:3, e:"嘴很臭但會約出來：家人。" },
+    ];
+
+    const PUNISHMENTS = [
+      "最低分：請大家飲料（品項由最高分指定）",
+      "最低分：負責訂位/喬時間（改一次加一個懲罰）",
+      "最低分：群組暱稱改成『我不熟我道歉』24 小時",
+      "最低分：錄 15 秒語音道歉（不得笑、不得剪）",
+      "最低分：下次聚會負責接送（順不順都算順）",
+      "最低分：發一篇限動稱讚群友（要真誠）"
+    ];
+
+    // ======== DOM ========
+    const quizCard = document.getElementById("quizCard");
+    const resultCard = document.getElementById("resultCard");
+    const qGroup = document.getElementById("qGroup");
+    const qType = document.getElementById("qType");
+    const qText = document.getElementById("qText");
+    const choicesEl = document.getElementById("choices");
+    const hintEl = document.getElementById("hint");
+    const progressEl = document.getElementById("progress");
+    const scoreNowEl = document.getElementById("scoreNow");
+    const metaNote = document.getElementById("metaNote");
+
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const restartBtn = document.getElementById("restartBtn");
+    const againBtn = document.getElementById("againBtn");
+
+    const finalScoreEl = document.getElementById("finalScore");
+    const finalLevelEl = document.getElementById("finalLevel");
+    const punishBoxEl = document.getElementById("punishBox");
+    const reviewEl = document.getElementById("review");
+
+    // ======== 狀態 ========
+    let idx = 0;
+    let score = 0;
+    const picked = Array(QUESTIONS.length).fill(null);
+    const totalScorable = QUESTIONS.reduce((acc, q) => acc + (q.a === null ? 0 : 1), 0);
+
+    const esc = (s) => String(s ?? "")
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+
+    const updateTop = () => {
+      progressEl.textContent = `第 ${idx+1} / ${QUESTIONS.length} 題`;
+      scoreNowEl.textContent = score;
+      metaNote.textContent = `可計分題：${totalScorable}（投票題不計分）`;
+    };
+
+    const showGrading = () => {
+      const q = QUESTIONS[idx];
+      const selected = picked[idx];
+
+      [...choicesEl.children].forEach((node, i) => {
+        node.classList.add("disabled");
+
+        if(q.a === null){
+          if(i === selected) node.classList.add("pick");
+          return;
+        }
+
+        if(i === q.a) node.classList.add("ok");
+        if(i === selected && selected !== q.a) node.classList.add("bad");
+      });
+
+      if(q.a === null){
+        hintEl.innerHTML = `🗳️ 你投給：<b>${esc(q.c[selected])}</b><br>${esc(q.e)}`;
+        return;
+      }
+
+      if(selected === q.a){
+        hintEl.innerHTML = `✅ 答對了！<br>${esc(q.e)}`;
+      }else{
+        hintEl.innerHTML = `❌ 答錯了！正解是 <b>${esc(q.c[q.a])}</b><br>${esc(q.e)}`;
+      }
+    };
+
+    const render = () => {
+      updateTop();
+      const q = QUESTIONS[idx];
+      qGroup.textContent = q.g;
+      qType.textContent = q.t;
+      qText.textContent = q.q;
+
+      choicesEl.innerHTML = "";
+      nextBtn.disabled = picked[idx] === null;
+
+      if(q.a === null){
+        hintEl.innerHTML = "🗳️ 這題是投票題：<b>不計分</b>（要計分去 GROUP_TRUTH 指定正解）。";
+      }else{
+        hintEl.textContent = "選一個答案（選完會顯示對錯與解釋）。";
+      }
+
+      q.c.forEach((txt, i) => {
+        const div = document.createElement("div");
+        div.className = "choice";
+        div.textContent = txt;
+        div.addEventListener("click", () => pick(i));
+        choicesEl.appendChild(div);
+      });
+
+      if(picked[idx] !== null) showGrading();
+      prevBtn.disabled = idx === 0;
+      nextBtn.textContent = (idx === QUESTIONS.length - 1) ? "看結果 ✅" : "下一題 ➡️";
+    };
+
+    const pick = (i) => {
+      if(picked[idx] !== null) return;
+      picked[idx] = i;
+
+      const q = QUESTIONS[idx];
+      if(q.a !== null && i === q.a) score += 1;
+
+      showGrading();
+      nextBtn.disabled = false;
+      updateTop();
+    };
+
+    const levelOf = (s, total) => {
+      const r = total === 0 ? 0 : (s / total);
+      if(r <= 0.34) return "🚶 路邊認識的";
+      if(r <= 0.67) return "🙂 普通朋友";
+      if(r <= 0.89) return "🔥 真的有在熟";
+      return "🏠 幹你這是家人吧";
+    };
+
+    const showResult = () => {
+      quizCard.style.display = "none";
+      resultCard.classList.add("show");
+
+      finalScoreEl.textContent = `${score} / ${totalScorable}（可計分題）`;
+      finalLevelEl.textContent = levelOf(score, totalScorable);
+
+      const punish = PUNISHMENTS[Math.floor(Math.random() * PUNISHMENTS.length)];
+      punishBoxEl.innerHTML = `🎲 隨機懲罰：<b>${esc(punish)}</b>`;
+
+      const wrongs = [];
+      QUESTIONS.forEach((q, i) => {
+        if(q.a === null) return;
+        if(picked[i] !== q.a){
+          wrongs.push(`第${i+1}題：你選「${q.c[picked[i]]}」→ 正解「${q.c[q.a]}」`);
+        }
+      });
+      reviewEl.innerHTML = wrongs.length
+        ? `你錯的可計分題：<br>• ${wrongs.map(esc).join("<br>• ")}`
+        : "可計分題全對？你要嘛偷看，要嘛真的太熟。";
+    };
+
+    const next = () => (idx === QUESTIONS.length - 1) ? showResult() : (idx++, render());
+    const prev = () => { if(idx>0){ idx--; render(); } };
+    const restart = () => {
+      idx = 0; score = 0;
+      for(let i=0;i<picked.length;i++) picked[i] = null;
+      resultCard.classList.remove("show");
+      quizCard.style.display = "block";
+      render();
+    };
+
+    prevBtn.addEventListener("click", prev);
+    nextBtn.addEventListener("click", next);
+    restartBtn.addEventListener("click", restart);
+    againBtn.addEventListener("click", restart);
+
+    render();
+  } catch (e) {
+    showErr(e);
   }
-
-  // ======== 30 題題庫（已刪除所有「可不可」題） ========
-  // correct: 0-based index；若為 null => 投票題（不計分）
-  const QUESTIONS = [
-    // 第一關｜記憶地獄（陷阱多）
-    { group:"第一關｜記憶地獄", type:"單選", text:"『開群組』這件事通常會發生在什麼狀況？", choices:["約吃飯前 5 分鐘","有人說要約但沒人做事","出事了才想到要溝通","以上皆是"], correct:3, explain:"你們最擅長的流程：需要的時候才建立流程。" },
-    { group:"第一關｜記憶地獄", type:"單選", text:"群組最常見、最像呼吸聲的回覆是？", choices:["好","收到","ㄚˊ","笑死"], correct:2, explain:"你們的『ㄚˊ』是群組心電圖。" },
-    { group:"第一關｜記憶地獄", type:"單選", text:"有人說『我都可以』，最常代表什麼？", choices:["真的沒差","懶得想","想要被安排","其實有偏好但不說"], correct:2, explain:"我都可以 = 你們決定，我負責吐槽。" },
-    { group:"第一關｜記憶地獄", type:"單選", text:"『順路載我』最接近真相的是？", choices:["真的順","小繞一下","繞爆","心理順、地理不順"], correct:3, explain:"順不順看嘴巴，不看地圖。" },
-    { group:"第一關｜記憶地獄", type:"單選", text:"群組討論集合時間最常卡在哪？", choices:["幾點","在哪","誰開車","全部一起卡"], correct:3, explain:"你們是多瓶頸系統（multi-bottleneck）。" },
-    { group:"第一關｜記憶地獄", type:"單選", text:"『再看看』最常代表什麼？", choices:["真的要看","其實已決定","想拖時間","不想回答"], correct:1, explain:"再看看 = 我已經決定了，但想裝一下。" },
-
-    // 第二關｜行為理解（超嘴）
-    { group:"第二關｜行為理解", type:"單選", text:"約聚會時最常出現的真相是？", choices:["大家都準時","有人遲到是常態","有人臨時消失","以上皆是"], correct:3, explain:"你們的穩定性在『不穩定』上非常穩定。" },
-    { group:"第二關｜行為理解", type:"單選", text:"群組最有效的止吵方式是？", choices:["講道理","道歉","貼圖","裝死"], correct:2, explain:"貼圖 = 和解協議。" },
-    { group:"第二關｜行為理解", type:"單選", text:"『沒錢』在群組最常扮演的角色是？", choices:["真實狀態","口頭禪","預防針","購物前儀式"], correct:3, explain:"先說沒錢，等下才好衝。" },
-    { group:"第二關｜行為理解", type:"單選", text:"有人回『好啊好啊』，你最該確認的是？", choices:["他是不是聽懂","他是不是醒著","他是不是在開車","以上都要"], correct:3, explain:"『好啊好啊』是高風險訊號。" },
-    { group:"第二關｜行為理解", type:"單選", text:"臨時改時間，最常用的理由是？", choices:["塞車","睡過頭","突然有事","不需要理由"], correct:3, explain:"你們的核心能力：不解釋。" },
-    { group:"第二關｜行為理解", type:"單選", text:"聚會結束前最常出現的句型是？", choices:["下次再約","下次我一定到","下次我請客","以上都可能是假的"], correct:3, explain:"你們的下次，是一種精神狀態。" },
-
-    // 第三關｜陷阱題（認真會錯）
-    { group:"第三關｜陷阱題", type:"單選", text:"如果有人說『我 5 分鐘到』，通常代表？", choices:["真的 5 分鐘","至少 15 分鐘","看他在哪","他在路上但還沒出門"], correct:2, explain:"這題唯一正解：看他在哪。" },
-    { group:"第三關｜陷阱題", type:"單選", text:"『晚點回』最接近的現實是？", choices:["馬上回","真的晚點回","可能不回","已讀不回"], correct:2, explain:"晚點回 = 不確定會不會回。" },
-    { group:"第三關｜陷阱題", type:"單選", text:"『我都可以』跟『隨便』哪個比較危險？", choices:["我都可以","隨便","都危險","看心情"], correct:2, explain:"兩個都會引發災難，只是不同形態。" },
-    { group:"第三關｜陷阱題", type:"單選", text:"最容易讓行程直接爆炸的因素是？", choices:["下雨","有人遲到","突然改地點","以上都會"], correct:3, explain:"你們行程的脆弱性很平均。" },
-    { group:"第三關｜陷阱題", type:"單選", text:"群組裡最常見的溝通模式是？", choices:["A 說 A，B 回 B","有問有答","全員理解一致","先吵再說"], correct:0, explain:"A 說 A，B 回 B：你們的日常。" },
-    { group:"第三關｜陷阱題", type:"單選", text:"『不要鬧』最常出現的場合是？", choices:["真的有人在鬧","沒人在鬧但先講","自己在鬧","以上皆是"], correct:3, explain:"不要鬧 = 你們的社交潤滑油。" },
-
-    // 第四關｜專屬題（可指定群組公認答案）
-    { group:"第四關｜專屬題", type:"投票/可指定正解", text:"半夜 2 點你說『我在路邊』，群組最可能接你電話的是誰？", choices:[...PEOPLE, "看情況"], correct: truthIndex("rescue_2am", [...PEOPLE, "看情況"]), explain:"這題你可以指定群組公認答案；不指定就不計分（投票題）。" },
-    { group:"第四關｜專屬題", type:"投票/可指定正解", text:"聚會最後最可能留下來收拾殘局的是誰？", choices:[...PEOPLE, "看情況"], correct: truthIndex("last_clean", [...PEOPLE, "看情況"]), explain:"想計分就到 GROUP_TRUTH 設定；不設定就投票題。" },
-    { group:"第四關｜專屬題", type:"投票/可指定正解", text:"群組最常遲到（但理由最多）的那位是誰？", choices:[...PEOPLE, "大家都會"], correct: truthIndex("most_late", [...PEOPLE, "大家都會"]), explain:"你們自己決定誰最常遲到（我不亂猜）。" },
-    { group:"第四關｜專屬題", type:"投票/可指定正解", text:"最衝動下單 / 最容易被推坑成功的是誰？", ch
+});
+</script>
+</body>
+</html>
